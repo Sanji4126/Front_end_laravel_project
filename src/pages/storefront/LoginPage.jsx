@@ -27,7 +27,15 @@ export default function LoginPage() {
         navigate(from, { replace: true });
       }
     } catch (err) {
-      setError(err.response?.data?.message || err.response?.data?.error || 'Invalid email or password');
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.response?.data?.error) {
+        setError(err.response.data.error);
+      } else if (err.message === 'Network Error' || !err.response) {
+        setError('Cannot connect to backend server. Please verify your connection or server status.');
+      } else {
+        setError('Invalid email or password');
+      }
     } finally {
       setLoading(false);
     }

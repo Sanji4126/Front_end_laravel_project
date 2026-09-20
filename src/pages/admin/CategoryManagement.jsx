@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import axiosClient from '../../api/axiosClient';
-import { Plus, Trash2, Edit2, X, Layers } from 'lucide-react';
+import { Plus, Trash2, Edit2, X, Layers, Loader2, AlertCircle } from 'lucide-react';
 
 export default function CategoryManagement() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [name, setName] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     fetchCategories();
@@ -28,37 +30,59 @@ export default function CategoryManagement() {
   const handleOpenCreate = () => {
     setEditingCategory(null);
     setName('');
+    setErrorMessage('');
     setIsModalOpen(true);
   };
 
   const handleOpenEdit = (cat) => {
     setEditingCategory(cat);
     setName(cat.cate_name || cat.name || '');
+    setErrorMessage('');
     setIsModalOpen(true);
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this category?')) return;
+    if (!window.confirm('Are you sure you want to delete this category? All related products may be affected.')) return;
     try {
       await axiosClient.delete(`/delete-category/${id}`);
       fetchCategories();
     } catch (err) {
-      alert(err.response?.data?.message || err.response?.data?.error || 'Failed to delete category');
+      const msg = err.response?.data?.error || err.response?.data?.message || 'Failed to delete category';
+      alert(msg);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage('');
+    if (!name.trim()) {
+      setErrorMessage('Category name cannot be empty.');
+      return;
+    }
+
     try {
+      setSubmitting(true);
       if (editingCategory) {
-        await axiosClient.post(`/update-category/${editingCategory.cate_id}`, { name });
+        await axiosClient.post(`/update-category/${editingCategory.cate_id}`, { name: name.trim() });
       } else {
-        await axiosClient.post('/add-category', { name });
+        await axiosClient.post('/add-category', { name: name.trim() });
       }
       setIsModalOpen(false);
       fetchCategories();
     } catch (err) {
-      alert(err.response?.data?.message || err.response?.data?.error || 'Failed to save category');
+      console.error('Category save error:', err);
+      const res = err.response?.data;
+      let msg = 'Failed to save category';
+      if (res?.errors && typeof res.errors === 'object') {
+        msg = Object.values(res.errors).flat().join(' ');
+      } else if (res?.error) {
+        msg = res.error;
+      } else if (res?.message) {
+        msg = res.message;
+      }
+      setErrorMessage(msg);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -79,7 +103,10 @@ export default function CategoryManagement() {
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
         {loading ? (
-          <div className="p-8 text-center text-gray-500">Loading categories...</div>
+          <div className="p-8 text-center text-gray-500 flex items-center justify-center gap-2">
+            <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
+            Loading categories...
+          </div>
         ) : categories.length === 0 ? (
           <div className="p-12 text-center text-gray-500">
             <Layers className="w-12 h-12 mx-auto text-gray-300 mb-2" />
@@ -126,8 +153,9 @@ export default function CategoryManagement() {
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl relative">
             <button
-              onClick={() => setIsModalOpen(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+              onClick={() => !submitting && setIsModalOpen(false)}
+              disabled={submitting}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 disabled:opacity-50"
             >
               <X className="w-5 h-5" />
             </button>
@@ -135,24 +163,40 @@ export default function CategoryManagement() {
               {editingCategory ? 'Edit Category' : 'Add New Category'}
             </h2>
 
+            {errorMessage && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{errorMessage}</span>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Category Name</label>
                 <input
                   type="text"
                   required
+                  disabled={submitting}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Laptops, Accessories"
-                  className="w-full border rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  className="w-full border rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none disabled:bg-gray-50"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-sm transition"
+                disabled={submitting}
+                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-sm transition flex items-center justify-center gap-2 disabled:bg-indigo-400"
               >
-                {editingCategory ? 'Update Category' : 'Create Category'}
+                {submitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    {editingCategory ? 'Updating Category...' : 'Creating Category...'}
+                  </>
+                ) : (
+                  editingCategory ? 'Update Category' : 'Create Category'
+                )}
               </button>
             </form>
           </div>
@@ -161,3 +205,4 @@ export default function CategoryManagement() {
     </div>
   );
 }
+

@@ -223,8 +223,12 @@ export default function ProductManagement() {
                 <tr key={p.product_id} className="hover:bg-gray-50/50">
                   <td className="p-4 flex items-center gap-3">
                     <img
-                      src={p.image || 'https://via.placeholder.com/48'}
+                      src={p.image || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=100&auto=format&fit=crop&q=60'}
                       alt={p.pro_name || p.product_name}
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=100&auto=format&fit=crop&q=60';
+                      }}
                       className="w-12 h-12 object-cover rounded-lg bg-gray-100"
                     />
                     <div>

@@ -121,7 +121,11 @@ export default function HomePage() {
                 {p.image ? (
                   <img
                     src={p.image}
-                    alt={p.pro_name}
+                    alt={p.pro_name || p.product_name}
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=400&auto=format&fit=crop&q=60';
+                    }}
                     className="w-full h-full object-cover"
                   />
                 ) : (

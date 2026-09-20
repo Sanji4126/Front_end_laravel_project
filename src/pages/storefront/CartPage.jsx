@@ -52,8 +52,12 @@ export default function CartPage() {
               className="flex items-center gap-4 p-4 bg-white rounded-xl border border-gray-200 shadow-sm"
             >
               <img
-                src={item.product?.image || 'https://via.placeholder.com/80'}
+                src={item.product?.image || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=200&auto=format&fit=crop&q=60'}
                 alt={item.product?.pro_name || item.product?.product_name}
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=200&auto=format&fit=crop&q=60';
+                }}
                 className="w-20 h-20 object-cover rounded-lg bg-gray-100"
               />
               <div className="flex-1">
